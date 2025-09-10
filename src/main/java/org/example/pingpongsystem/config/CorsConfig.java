@@ -17,7 +17,7 @@ public class CorsConfig {
 
         // 允许的前端域名（生产环境必须指定具体域名，禁止用 *）
         // 例：允许 https://your-frontend.com 和 http://localhost:8080 访问
-        config.addAllowedOrigin("http://localhost:9529");
+        config.addAllowedOrigin("http://localhost:9528");
         config.addAllowedOrigin("http://localhost:9528");
 
         // 允许携带 Cookie（前后端都需要配置，否则跨域请求会丢失 Cookie）

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class TestService {
     public void savePerson() {
         testEntity person = new testEntity();
-        person.setName("刘明易");
+        person.setName("林辉");
         person.setEmail("lmy_ethan@163.com");
         testRepository.save(person);
     }

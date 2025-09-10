@@ -2,6 +2,7 @@ package org.example.pingpongsystem.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Entity
@@ -11,7 +12,7 @@ public class TableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @NotNull
     @Column(nullable = false)
     private Long schoolId;
 

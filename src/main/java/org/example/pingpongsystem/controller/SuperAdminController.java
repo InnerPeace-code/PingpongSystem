@@ -32,13 +32,22 @@ public class SuperAdminController {
         return superAdminService.createAdmin(adminEntity);
     }
 
+    @GetMapping("/schools")
+    public Result<List<SchoolEntity>> getAllSchools() {
+        return superAdminService.getAllSchools();
+    }
+
     @PostMapping("/create_school")
     public Result<SchoolEntity> createSchool(@RequestBody SchoolRequest request) {
         SchoolEntity schoolEntity = new SchoolEntity();
+        schoolEntity.setSchoolname(request.getSchoolname()); // 新增：设置校区名称
         schoolEntity.setName(request.getName());
         schoolEntity.setAddress(request.getLocation());
         schoolEntity.setTable_num(request.getTableCount());
         schoolEntity.setAdminId(request.getAdminId());
+        // 补充设置其他字段（phone、email等，前端已传递）
+        schoolEntity.setPhone(request.getPhone()); // 如果SchoolRequest中也添加了phone
+        schoolEntity.setEmail(request.getEmail()); // 如果SchoolRequest中也添加了email
         return superAdminService.createSchool(schoolEntity);
     }
 
@@ -47,6 +56,10 @@ public class SuperAdminController {
         return superAdminService.reviseSchool(schoolEntity);
     }
 
+    @DeleteMapping("/delete_school/{id}")
+    public Result<Void> deleteSchool(@PathVariable Long id) {
+        return superAdminService.deleteSchool(id);
+    }
     @Data
     public static class LoginRequest {
         private String username;
@@ -60,5 +73,8 @@ public class SuperAdminController {
         private String location;
         private int tableCount;
         private int adminId;
+        private String schoolname; // 校区名称
+        private String phone; // 联系电话
+        private String email; // 联系邮箱
     }
 }

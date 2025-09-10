@@ -9,4 +9,6 @@ import java.util.List;
 public interface TokenRepository extends JpaRepository<TokenEntity, Long> {
 
     public TokenEntity findByToken(String token);
+
+    void deleteByToken(String token);
 }

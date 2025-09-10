@@ -11,4 +11,5 @@ public class InfoAns {
     private String phone;
     private String email;
     private Long schoolId;
+    private String role;
 }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SuperAdminService {
@@ -55,6 +56,17 @@ public class SuperAdminService {
         }
     }
 
+    // 获取所有学校
+    public Result<List<SchoolEntity>> getAllSchools() {
+        try {
+            List<SchoolEntity> schools = schoolRepository.findAll();
+            return Result.success(schools);
+        } catch (DataAccessException e) {
+            System.err.println("获取学校列表失败：" + e.getMessage());
+            return Result.error(StatusCode.FAIL, "获取学校列表失败");
+        }
+    }
+
     public Result<AdminEntity> createAdmin(AdminEntity admin) {
         try {
             adminRepository.save(admin);
@@ -82,46 +94,72 @@ public class SuperAdminService {
         return tokenService.createToken(true, false, false, false, temp.getId());
     }
 
+
     @Transactional
     public Result<SchoolEntity> reviseSchool(SchoolEntity school) {
-        SchoolEntity temp = schoolRepository.findBySchoolname(school.getSchoolname());
-        if (temp == null) {
+        Optional<SchoolEntity> tempOpt = schoolRepository.findById(school.getId());
+        if (tempOpt.isEmpty()) {
             return Result.error(StatusCode.USERNAME_NOT_FOUND, "学校不存在");
         }
-        else {
-            if (!school.getAddress().equals(temp.getAddress())) {
-                if (!school.getAddress().isEmpty())
-                    temp.setAddress(school.getAddress());
-            }
-            if (!school.getName().equals(temp.getName())) {
-                if (!school.getName().isEmpty())
-                    temp.setName(school.getName());
-            }
-            if (!school.getPhone().equals(temp.getPhone())) {
-                if (!school.getPhone().isEmpty())
-                    temp.setPhone(school.getPhone());
-            }
-            if (!school.getEmail().equals(temp.getEmail())) {
-                if (!school.getEmail().isEmpty())
-                    temp.setEmail(school.getEmail());
-            }
-            if (school.getAdminId() != temp.getAdminId()) {
-                temp.setAdminId(school.getAdminId());
-            }
-            if (school.getTable_num() != temp.getTable_num()) {
-                List<TableEntity> li = tableRepository.findAllBySchoolId(school.getId());
-                tableRepository.deleteAll(li);
+        SchoolEntity temp = tempOpt.get(); // 获取唯一实体
 
-                for (int i=0;i<school.getTable_num();i++) {
-                    TableEntity tableEntity = new TableEntity();
-                    tableEntity.setOccupied(false);
-                    tableEntity.setSchoolId(school.getId());
-                    tableRepository.save(tableEntity);
-                }
+        if (!school.getAddress().equals(temp.getAddress())) {
+            if (!school.getAddress().isEmpty())
+                temp.setAddress(school.getAddress());
+        }
+        if (!school.getName().equals(temp.getName())) {
+            if (!school.getName().isEmpty())
+                temp.setName(school.getName());
+        }
+        if (!school.getPhone().equals(temp.getPhone())) {
+            if (!school.getPhone().isEmpty())
+                temp.setPhone(school.getPhone());
+        }
+        if (!school.getEmail().equals(temp.getEmail())) {
+            if (!school.getEmail().isEmpty())
+                temp.setEmail(school.getEmail());
+        }
+        if (school.getAdminId() != temp.getAdminId()) {
+            temp.setAdminId(school.getAdminId());
+        }
+        if (school.getTable_num() != temp.getTable_num()) {
+            List<TableEntity> li = tableRepository.findAllBySchoolId(school.getId());
+            tableRepository.deleteAll(li);
 
-                temp.setTable_num(school.getTable_num());
+            for (int i=0;i<school.getTable_num();i++) {
+                TableEntity tableEntity = new TableEntity();
+                tableEntity.setOccupied(false);
+                tableEntity.setSchoolId(school.getId());
+                tableRepository.save(tableEntity);
             }
-            return Result.success(temp);
+
+            temp.setTable_num(school.getTable_num());
+        }
+        // 注意：需要保存更新后的实体（原代码漏了 save 操作）
+        SchoolEntity updated = schoolRepository.save(temp);
+        return Result.success(temp);
+
+    }
+
+    // 按ID删除学校
+    @Transactional
+    public Result<Void> deleteSchool(Long id) {
+        try {
+            // 检查学校是否存在
+            if (!schoolRepository.existsById(id)) {
+                return Result.error(StatusCode.USERNAME_NOT_FOUND, "学校不存在");
+            }
+
+            // 删除关联的球台
+            List<TableEntity> tables = tableRepository.findAllBySchoolId(id);
+            tableRepository.deleteAll(tables);
+
+            // 删除学校
+            schoolRepository.deleteById(id);
+            return Result.success();
+        } catch (DataAccessException e) {
+            System.err.println("删除学校失败：" + e.getMessage());
+            return Result.error(StatusCode.FAIL, "删除学校失败");
         }
     }
 }
