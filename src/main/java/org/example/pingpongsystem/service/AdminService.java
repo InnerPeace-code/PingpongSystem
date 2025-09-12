@@ -5,6 +5,7 @@ import org.example.pingpongsystem.entity.*;
 import org.example.pingpongsystem.repository.*;
 import org.example.pingpongsystem.utility.Result;
 import org.example.pingpongsystem.utility.StatusCode;
+import org.example.pingpongsystem.utility.interfaces.InfoAns;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminService {
@@ -41,24 +43,64 @@ public class AdminService {
         return tokenService.createToken(false, true, false, false, temp.getId());
     }
 
-    public Result<List<CoachEntity>> getUncertifiedCoach(Long schoolId) {
-        List<CoachEntity> tmp = coachRepository.findAllByisCertified(false);
-        List<CoachEntity> list = new ArrayList<>();
-        for (CoachEntity c : tmp) {
-            if (c.getSchoolId() == schoolId)
-                list.add(c);
+    public Result<List<CoachEntity>> getUncertifiedCoachesByAdminToken(String token) {
+        // 1. 通过token解析出当前管理员的ID
+        Result<InfoAns> infoResult = tokenService.getInfo(token);
+        if (!infoResult.isSuccess()) {
+            return Result.error(StatusCode.FAIL, "获取管理员信息失败：" + infoResult.getMessage());
         }
-        return Result.success(list);
+        InfoAns adminInfo = infoResult.getData();
+        // 验证当前用户是否为管理员（避免越权）
+        if (!"admin".equals(adminInfo.getRole()) && !"super_admin".equals(adminInfo.getRole())) {
+            return Result.error(StatusCode.FAIL, "权限不足，非管理员用户");
+        }
+        Long adminId = Long.valueOf(adminInfo.getUserId()); // 假设InfoAns中已包含userId字段（需确认实体定义）
+
+        // 2. 查询该管理员管理的所有校区（通过adminId关联）
+        List<SchoolEntity> managedSchools = schoolRepository.findByAdminId(adminId);
+        if (managedSchools.isEmpty()) {
+            return Result.success(new ArrayList<>()); // 没有管理的校区，返回空列表
+        }
+
+        // 3. 提取所有校区ID
+        List<Long> schoolIds = managedSchools.stream()
+                .map(SchoolEntity::getId)
+                .collect(Collectors.toList());
+
+        // 4. 查询这些校区下的所有未审核教练
+        List<CoachEntity> allUncertified = coachRepository.findAllByisCertified(false);
+        List<CoachEntity> result = allUncertified.stream()
+                .filter(coach -> schoolIds.contains(coach.getSchoolId()))
+                .collect(Collectors.toList());
+
+        return Result.success(result);
+    }
+
+    public Result<CoachEntity> getCoachDetail(Long coachId) {
+        Optional<CoachEntity> coachOpt = coachRepository.findById(coachId);
+        if (coachOpt.isPresent()) {
+            CoachEntity coach = coachOpt.get();
+            // 确保只返回未审核的教练详情（权限控制）
+            if (!coach.isCertified()) {
+                return Result.success(coach);
+            } else {
+                return Result.error(StatusCode.FAIL, "该教练已通过审核，无需查看");
+            }
+        } else {
+            return Result.error(StatusCode.FAIL, "未找到该教练信息");
+        }
     }
 
     @Transactional
-    public Result<CoachEntity> certifyCoach(Long coachId, boolean isAccepted) {
+    public Result<CoachEntity> certifyCoach(Long coachId, boolean isAccepted,int level) {
         Optional<CoachEntity> tmp = coachRepository.findById(coachId);
         if (tmp.isPresent()) {
             CoachEntity coach = tmp.get();
             if (isAccepted) {
                 coach.setCertified(true);
-                return Result.success(coachRepository.save(coach));
+                coach.setLevel(level);
+                System.out.println(coach.getName());
+                return Result.success(coach);
             }
             else {
                 coachRepository.delete(coach);

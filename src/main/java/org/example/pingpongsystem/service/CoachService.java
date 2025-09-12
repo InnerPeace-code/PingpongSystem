@@ -67,6 +67,9 @@ public class CoachService {
         }
         else if (!temp.getPassword().equals(password)) {
             return Result.error(StatusCode.PASSWORD_ERROR, "密码错误");
+        }// 新增审核状态检查
+        else if (!temp.isCertified()) {
+            return Result.error(StatusCode.FAIL, "账号待审核，请等待管理员审核通过后再登录");
         }
         return tokenService.createToken(false, false, true, false, temp.getId());
     }
@@ -211,33 +214,61 @@ public class CoachService {
     }
 
     private Result<String> savePhoto(MultipartFile file) throws IOException {
-        // 1. 验证文件
+        // 1. 验证文件（保持不变）
         if (file.isEmpty()) {
             return Result.error(StatusCode.FAIL, "上传失败：文件为空");
         }
         if (!Objects.requireNonNull(file.getContentType()).startsWith("image/")) {
             return Result.error(StatusCode.FAIL, "上传失败：请上传图片文件");
         }
-//            if (file.getSize() > 5 * 1024 * 1024) { // 限制5MB
-//                return "上传失败：文件大小不能超过5MB";
-//            }
 
-        // 2. 生成唯一文件名（避免冲突）
+        // 2. 生成唯一文件名（保持不变）
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String fileName = UUID.randomUUID() + extension;
+        String fileName = UUID.randomUUID() + extension; // 只存文件名，如 "a1b2c3.png"
 
-        // 3. 确保上传目录存在
+        // 3. 确保上传目录存在（保持不变）
         Path uploadPath = Paths.get(Utility.CoachPhotoPath);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        // 4. 保存图片到文件系统
+        // 4. 保存图片到文件系统（保持不变）
         Path filePath = uploadPath.resolve(fileName);
         Files.write(filePath, file.getBytes());
 
-        // 5. 保存路径到数据库
-        return Result.success(filePath.toString());
+        // 5. 只返回文件名（而非完整路径）
+        return Result.success(fileName); // 数据库中存储的是 "a1b2c3.png"
     }
+
+//    private Result<String> savePhoto(MultipartFile file) throws IOException {
+//        // 1. 验证文件
+//        if (file.isEmpty()) {
+//            return Result.error(StatusCode.FAIL, "上传失败：文件为空");
+//        }
+//        if (!Objects.requireNonNull(file.getContentType()).startsWith("image/")) {
+//            return Result.error(StatusCode.FAIL, "上传失败：请上传图片文件");
+//        }
+////            if (file.getSize() > 5 * 1024 * 1024) { // 限制5MB
+////                return "上传失败：文件大小不能超过5MB";
+////            }
+//
+//        // 2. 生成唯一文件名（避免冲突）
+//        String originalFilename = file.getOriginalFilename();
+//        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+//        String fileName = UUID.randomUUID() + extension;
+//
+//        // 3. 确保上传目录存在
+//        Path uploadPath = Paths.get(Utility.CoachPhotoPath);
+//        if (!Files.exists(uploadPath)) {
+//            Files.createDirectories(uploadPath);
+//        }
+//
+//        // 4. 保存图片到文件系统
+//        Path filePath = uploadPath.resolve(fileName);
+//        Files.write(filePath, file.getBytes());
+//
+//        // 5. 保存路径到数据库
+//        return Result.success(filePath.toString());
+//    }
 }

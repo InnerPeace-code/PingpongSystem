@@ -12,4 +12,5 @@ public class InfoAns {
     private String email;
     private Long schoolId;
     private String role;
+    private Long UserId;
 }

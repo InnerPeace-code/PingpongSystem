@@ -32,6 +32,24 @@ public class SuperAdminController {
         return superAdminService.createAdmin(adminEntity);
     }
 
+    // 新增：编辑管理员
+    @PutMapping("/edit_admin")
+    public Result<AdminEntity> editAdmin(@RequestBody AdminEntity adminEntity) {
+        return superAdminService.editAdmin(adminEntity);
+    }
+
+    // 新增：删除管理员
+    @DeleteMapping("/delete_admin/{id}")
+    public Result<Void> deleteAdmin(@PathVariable Long id) {
+        return superAdminService.deleteAdmin(id);
+    }
+
+    // 新增：获取所有管理员列表（便于前端展示编辑/删除目标）
+    @GetMapping("/admins")
+    public Result<List<AdminEntity>> getAllAdmins() {
+        return superAdminService.getAllAdmins();
+    }
+
     @GetMapping("/schools")
     public Result<List<SchoolEntity>> getAllSchools() {
         return superAdminService.getAllSchools();
@@ -59,6 +77,25 @@ public class SuperAdminController {
     @DeleteMapping("/delete_school/{id}")
     public Result<Void> deleteSchool(@PathVariable Long id) {
         return superAdminService.deleteSchool(id);
+    }
+
+    // 超级管理员教练审核
+    //获取所有待审核的教练
+    @GetMapping("/get_all_uncertified_coaches")
+    public Result<List<CoachEntity>> getAllUncertifiedCoaches() {
+        return superAdminService.getAllUncertifiedCoaches();
+    }
+
+    //审核教练
+    @PostMapping("/super_certify_coach")
+    public Result<CoachEntity> superCertifyCoach(@RequestBody AdminController.CertifyRequest request) {
+        return superAdminService.superCertifyCoach(request.getCoachId(), request.getIsAccepted(),request.getLevel());
+    }
+
+    //获取教练详情
+    @GetMapping("/get_super_coach_detail")
+    public Result<CoachEntity> getSuperCoachDetail(@RequestParam Long coachId) {
+        return superAdminService.getSuperCoachDetail(coachId);
     }
     @Data
     public static class LoginRequest {

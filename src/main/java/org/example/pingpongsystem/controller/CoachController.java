@@ -18,14 +18,14 @@ public class CoachController {
     }
 
     @PostMapping("/create_user")
-    public Result<String> createUser(@RequestBody CoachEntity coachEntity, MultipartFile file) {
+    public Result<String> createUser(CoachEntity coachEntity, @RequestParam MultipartFile file) {
         Result<String> result = coachService.save(coachEntity, file);
         return result;
     }
 
     @PostMapping("/login")
-    public Result<String> login(@RequestParam String username, @RequestParam String password) {
-        return coachService.login(username, password);
+    public Result<String> login(@RequestBody SuperAdminController.LoginRequest request) {
+        return coachService.login(request.getUsername(), request.getPassword());
     }
 
     @PostMapping("/update_info")

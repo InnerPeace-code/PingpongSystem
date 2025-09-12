@@ -6,6 +6,7 @@ import org.example.pingpongsystem.entity.StudentEntity;
 import org.example.pingpongsystem.service.CoachService;
 import org.example.pingpongsystem.service.StudentService;
 import org.example.pingpongsystem.utility.Result;
+import org.example.pingpongsystem.utility.StatusCode;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,21 +23,18 @@ public class StudentController {
     }
 
     @PostMapping("/create_user")
-    public String createUser(@RequestBody StudentEntity studentEntity) {
-        studentEntity.setId(null);
-        studentEntity.setVersion(null);
+    public Result<String> createUser(@RequestBody StudentEntity studentEntity) {
         boolean result = studentService.save(studentEntity);
         if (result) {
-            return "保存成功";
-        }
-        else {
-            return "用户名、密码、校区、姓名和电话是必须填写的信息，其他信息可空白";
+            return Result.success("保存成功"); // 返回 { "code":20000, "data":"保存成功" }
+        } else {
+            return Result.error(StatusCode.FAIL,"用户名、密码、校区、姓名和电话是必须填写的信息，其他信息可空白");
         }
     }
 
     @PostMapping("/login")
-    public Result<String> login(@RequestParam String username, @RequestParam String password) {
-        return studentService.login(username, password);
+    public Result<String> login(@RequestBody SuperAdminController.LoginRequest request) {
+        return studentService.login(request.getUsername(), request.getPassword());
     }
 
     @PostMapping("/update_info")

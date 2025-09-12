@@ -31,6 +31,9 @@ public class StudentService {
     }
 
     public boolean save(StudentEntity student) {
+        if (student.getAge() == null) {
+            student.setAge(0);
+        }
         try {
             studentRepository.save(student);
             return true;
