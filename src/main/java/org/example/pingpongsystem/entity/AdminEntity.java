@@ -29,6 +29,8 @@ public class AdminEntity {
 
     private String email;
 
+    private String avatar;
+
     @Version
     private Integer version;
 }

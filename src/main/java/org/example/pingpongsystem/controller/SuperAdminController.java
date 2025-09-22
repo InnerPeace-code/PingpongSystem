@@ -6,6 +6,8 @@ import org.example.pingpongsystem.service.AdminService;
 import org.example.pingpongsystem.service.CoachService;
 import org.example.pingpongsystem.service.SuperAdminService;
 import org.example.pingpongsystem.utility.Result;
+import org.example.pingpongsystem.utility.interfaces.InfoAns;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +32,24 @@ public class SuperAdminController {
     @PostMapping("/create_admin")
     public Result<AdminEntity> createUser(@RequestBody AdminEntity adminEntity) {
         return superAdminService.createAdmin(adminEntity);
+    }
+
+    // 新增：编辑管理员
+    @PostMapping("/edit_admin")
+    public Result<AdminEntity> editAdmin(@RequestBody AdminEntity adminEntity) {
+        return superAdminService.editAdmin(adminEntity);
+    }
+
+    // 新增：删除管理员
+    @DeleteMapping("/delete_admin/{id}")
+    public Result<Void> deleteAdmin(@PathVariable Long id) {
+        return superAdminService.deleteAdmin(id);
+    }
+
+    // 新增：获取所有管理员列表（便于前端展示编辑/删除目标）
+    @GetMapping("/admins")
+    public Result<List<AdminEntity>> getAllAdmins() {
+        return superAdminService.getAllAdmins();
     }
 
     @GetMapping("/schools")
@@ -60,6 +80,25 @@ public class SuperAdminController {
     public Result<Void> deleteSchool(@PathVariable Long id) {
         return superAdminService.deleteSchool(id);
     }
+
+    // 超级管理员教练审核
+    //获取所有待审核的教练
+    @GetMapping("/get_all_uncertified_coaches")
+    public Result<List<CoachEntity>> getAllUncertifiedCoaches() {
+        return superAdminService.getAllUncertifiedCoaches();
+    }
+
+    //审核教练
+    @PostMapping("/super_certify_coach")
+    public Result<CoachEntity> superCertifyCoach(@RequestBody AdminController.CertifyRequest request) {
+        return superAdminService.superCertifyCoach(request.getCoachId(), request.getIsAccepted(),request.getLevel());
+    }
+
+    //获取教练详情
+    @GetMapping("/get_super_coach_detail")
+    public Result<CoachEntity> getSuperCoachDetail(@RequestParam Long coachId) {
+        return superAdminService.getSuperCoachDetail(coachId);
+    }
     @Data
     public static class LoginRequest {
         private String username;
@@ -72,9 +111,63 @@ public class SuperAdminController {
         private String name;
         private String location;
         private int tableCount;
-        private int adminId;
+        private Long adminId;
         private String schoolname; // 校区名称
         private String phone; // 联系电话
         private String email; // 联系邮箱
     }
+
+    @PostMapping("/upload_avatar")
+    public Result<String> uploadAvatar(
+            @RequestParam Long superAdminId,
+            @RequestParam MultipartFile file
+    ) {
+        return superAdminService.uploadAvatar(superAdminId, file);
+    }
+
+    @PostMapping("/update_info")
+    public Result<SuperAdminEntity> updateSuperAdminInfo(@RequestBody InfoAns info) {
+        return superAdminService.updateInfo(info);
+    }
+
+    // 新增：分页查询所有校区学生（支持筛选）
+    @GetMapping("/all-students")
+    public Result<Page<StudentEntity>> getAllStudents(
+            @RequestParam String token,
+            @RequestParam(required = false) Long schoolId,
+            @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return superAdminService.getAllStudentsWithPage(token, schoolId, name, pageNum, pageSize);
+    }
+
+    // 新增：分页查询所有已认证教练（支持筛选）
+    @GetMapping("/all-certified-coaches")
+    public Result<Page<CoachEntity>> getAllCertifiedCoaches(
+            @RequestParam String token,
+            @RequestParam(required = false) Long schoolId,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Integer level,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return superAdminService.getAllCertifiedCoachesWithPage(token, schoolId, name, level, pageNum, pageSize);
+    }
+
+    // 新增：超级管理员更新学生信息
+    @PostMapping("/update-student")
+    public Result<StudentEntity> updateStudent(
+            @RequestParam String token,
+            @RequestBody StudentEntity student) {
+        return superAdminService.updateStudent(token, student);
+    }
+
+    // 新增：超级管理员更新已认证教练信息
+    @PostMapping("/update-certified-coach")
+    public Result<CoachEntity> updateCertifiedCoach(
+            @RequestParam String token,
+            @RequestBody CoachEntity coach) {
+        return superAdminService.updateCertifiedCoach(token, coach);
+    }
+
+
 }

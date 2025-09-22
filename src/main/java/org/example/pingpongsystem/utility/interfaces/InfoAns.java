@@ -12,4 +12,9 @@ public class InfoAns {
     private String email;
     private Long schoolId;
     private String role;
+    private Long UserId;
+    private String avatar;
+    private String photoPath;
+    private String description;
+    private String name;
 }

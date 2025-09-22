@@ -1,7 +1,9 @@
 package org.example.pingpongsystem.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Entity
@@ -23,11 +25,13 @@ public class CoachEntity {
     @Column(nullable = false)
     private String name;
 
+    // 显式指定JSON中的键为"isMale"
+    @JsonProperty("isMale")
     private boolean isMale;
 
     private int age;
 
-    @NotBlank
+    @NotNull
     @Column(nullable = false)
     private Long schoolId;
 
@@ -49,6 +53,13 @@ public class CoachEntity {
 
     private boolean isCertified;
 
+    private String avatar;
+
     @Version
     private Integer version;
+    // 手动定义setIsMale，覆盖Lombok的默认实现
+    public void setIsMale(boolean isMale) {
+        this.isMale = isMale;
+    }
+    public boolean getIsMale() { return this.isMale; }
 }

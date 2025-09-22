@@ -25,7 +25,7 @@ public class SchoolEntity {
 
     private String email;
 
-    private int adminId;
+    private Long adminId;
 
     @Column(nullable = false)
     private int table_num;

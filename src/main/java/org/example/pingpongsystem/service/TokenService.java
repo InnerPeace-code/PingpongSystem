@@ -44,6 +44,8 @@ public class TokenService {
                     infoAns.setEmail(admin.get().getEmail());
                     // 补充角色信息（前端需要role字段）
                     infoAns.setRole("super_admin");
+                    infoAns.setUserId(admin.get().getId());
+                    infoAns.setAvatar(admin.get().getAvatar());
                     return Result.success(infoAns);
                 } else return Result.error(StatusCode.FAIL, "超级管理员未找到");
             }
@@ -58,6 +60,9 @@ public class TokenService {
                     infoAns.setEmail(admin.get().getEmail());
                     // 补充角色信息
                     infoAns.setRole("admin");
+                    infoAns.setAvatar(admin.get().getAvatar());
+                    infoAns.setUserId(admin.get().getId());
+                    infoAns.setName(admin.get().getName());
                     return Result.success(infoAns);
                 } else return Result.error(StatusCode.FAIL, "管理员未找到");
             }
@@ -69,12 +74,17 @@ public class TokenService {
                     infoAns.setUsername(coach.get().getUsername());
                     infoAns.setPassword(coach.get().getPassword());
                     infoAns.setAge(coach.get().getAge());
-                    infoAns.setMale(coach.get().isMale());
+                    infoAns.setMale(coach.get().getIsMale());
                     infoAns.setPhone(coach.get().getPhone());
                     infoAns.setEmail(coach.get().getEmail());
                     infoAns.setSchoolId(coach.get().getSchoolId());
                     // 补充角色信息
                     infoAns.setRole("coach");
+                    infoAns.setUserId(coach.get().getId());
+                    infoAns.setAvatar(coach.get().getAvatar());
+                    infoAns.setPhotoPath(coach.get().getPhotoPath());
+                    infoAns.setDescription(coach.get().getDescription());
+                    infoAns.setName(coach.get().getName());
                     return Result.success(infoAns);
                 } else return Result.error(StatusCode.FAIL, "教练未找到");
             }
@@ -92,6 +102,9 @@ public class TokenService {
                     infoAns.setSchoolId(student.get().getSchoolId());
                     // 补充角色信息
                     infoAns.setRole("student");
+                    infoAns.setUserId(student.get().getId());
+                    infoAns.setAvatar(student.get().getAvatar());
+                    infoAns.setName(student.get().getName());
                     return Result.success(infoAns);
                 } else return Result.error(StatusCode.FAIL, "学员未找到");
             }

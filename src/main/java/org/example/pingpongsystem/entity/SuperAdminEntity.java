@@ -25,6 +25,8 @@ public class SuperAdminEntity {
 
     private String email;
 
+    private String avatar;
+
     @Version
     private Integer version;
 }

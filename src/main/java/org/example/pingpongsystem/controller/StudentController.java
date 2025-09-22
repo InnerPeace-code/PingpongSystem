@@ -6,7 +6,9 @@ import org.example.pingpongsystem.entity.StudentEntity;
 import org.example.pingpongsystem.service.CoachService;
 import org.example.pingpongsystem.service.StudentService;
 import org.example.pingpongsystem.utility.Result;
+import org.example.pingpongsystem.utility.StatusCode;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,21 +24,15 @@ public class StudentController {
     }
 
     @PostMapping("/create_user")
-    public String createUser(@RequestBody StudentEntity studentEntity) {
-        studentEntity.setId(null);
-        studentEntity.setVersion(null);
-        boolean result = studentService.save(studentEntity);
-        if (result) {
-            return "保存成功";
-        }
-        else {
-            return "用户名、密码、校区、姓名和电话是必须填写的信息，其他信息可空白";
-        }
+    public Result<String> createUser(@RequestBody StudentEntity studentEntity) {
+        System.out.println("学生性别 " + studentEntity.isMale());
+        Result<String> result = studentService.save(studentEntity);
+        return result;
     }
 
     @PostMapping("/login")
-    public Result<String> login(@RequestParam String username, @RequestParam String password) {
-        return studentService.login(username, password);
+    public Result<String> login(@RequestBody SuperAdminController.LoginRequest request) {
+        return studentService.login(request.getUsername(), request.getPassword());
     }
 
     @PostMapping("/update_info")
@@ -45,17 +41,37 @@ public class StudentController {
     }
 
     @GetMapping("/get_coach_list")
-    public Result<List<CoachEntity>> getCoachList(@RequestParam(value = "name") String name,
-                                                  @RequestParam(value = "isMale") Boolean isMale,
-                                                  @RequestParam(value = "age_low") Integer age_low,
-                                                  @RequestParam(value = "age_high") Integer age_high,
-                                                  @RequestParam(value = "level") Integer level) {
-        return coachService.getSearched(name, isMale, age_low, age_high, level);
+    public Result<List<CoachEntity>> getCoachList(
+            @RequestParam(value = "name", required = false) String name,  // 允许为null
+            @RequestParam(value = "isMale", required = false) Boolean isMale,
+            @RequestParam(value = "age_low", required = false) Integer age_low,
+            @RequestParam(value = "age_high", required = false) Integer age_high,
+            @RequestParam(value = "level", required = false) Integer level,
+            @RequestParam(value = "schoolId", required = false) Long schoolId) {  // 新增校区ID参数
+        return coachService.getSearched(name, isMale, age_low, age_high, level, schoolId);
     }
 
     @PostMapping("/select_coach")
     public Result<CoachTeachStudentEntity> selectCoach(@RequestParam(value = "coachId") Long coachId,
                                                        @RequestParam(value = "studentId") Long studentId) {
         return studentService.selectCoach(coachId, studentId);
+    }
+
+    @PostMapping("/upload_avatar")
+    public Result<String> uploadAvatar(
+            @RequestParam Long studentId,
+            @RequestParam MultipartFile file
+    ) {
+        return studentService.uploadAvatar(studentId, file);
+    }
+
+    @GetMapping("/get_coach_detail")
+    public Result<CoachEntity> getStudentCoachDetail(@RequestParam Long coachId) {
+        return studentService.getStudentCoachDetail(coachId);
+    }
+
+    @GetMapping("/get_related_coaches")
+    public Result<List<CoachEntity>> getRelatedCoaches(@RequestParam Long studentId) {
+        return studentService.getRelatedCoaches(studentId);
     }
 }
