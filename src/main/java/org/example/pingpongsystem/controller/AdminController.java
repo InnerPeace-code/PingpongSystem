@@ -4,6 +4,7 @@ import lombok.Data;
 import org.example.pingpongsystem.entity.*;
 import org.example.pingpongsystem.service.AdminService;
 import org.example.pingpongsystem.service.CoachService;
+import org.example.pingpongsystem.service.PaymentService;
 import org.example.pingpongsystem.service.SuperAdminService;
 import org.example.pingpongsystem.utility.Result;
 import org.example.pingpongsystem.utility.interfaces.InfoAns;
@@ -17,8 +18,10 @@ import java.util.List;
 @RestController
 public class AdminController {
     private final AdminService adminService;
-    public AdminController(AdminService adminService) {
+    private final PaymentService paymentService;
+    public AdminController(AdminService adminService, PaymentService paymentService) {
         this.adminService = adminService;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/login")
@@ -115,5 +118,15 @@ public class AdminController {
             @RequestParam String token,
             @RequestBody CoachEntity coach) {
         return adminService.updateCertifiedCoach(token, coach);
+    }
+
+    /**
+     * 管理员给学生线下充值
+     */
+    @PostMapping("/recharge")
+    public Result<PaymentRecordEntity> offlineRecharge(
+            @RequestParam Long studentId,
+            @RequestParam Double amount) {
+        return paymentService.adminOfflineRecharge(studentId, amount);
     }
 }

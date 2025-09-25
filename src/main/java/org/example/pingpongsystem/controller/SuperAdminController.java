@@ -1,27 +1,38 @@
 package org.example.pingpongsystem.controller;
 
 import lombok.Data;
+import org.example.pingpongsystem.dto.ActivationExpiryDTO;
 import org.example.pingpongsystem.entity.*;
-import org.example.pingpongsystem.service.AdminService;
-import org.example.pingpongsystem.service.CoachService;
-import org.example.pingpongsystem.service.SuperAdminService;
+import org.example.pingpongsystem.service.*;
 import org.example.pingpongsystem.utility.Result;
+import org.example.pingpongsystem.utility.StatusCode;
 import org.example.pingpongsystem.utility.interfaces.InfoAns;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequestMapping("/super_admin")
 @RestController
 public class SuperAdminController {
     private final SuperAdminService superAdminService;
     private final AdminService adminService;
+    private final PaymentService paymentService;
+    private final SystemActivationService activationService;
+    private final TokenService tokenService;
 
-    public SuperAdminController(SuperAdminService superAdminService, AdminService adminService) {
+    public SuperAdminController(SuperAdminService superAdminService,
+                                AdminService adminService,
+                                PaymentService paymentService,
+                                SystemActivationService systemActivationService,
+                                TokenService tokenService) {
         this.superAdminService = superAdminService;
         this.adminService = adminService;
+        this.paymentService = paymentService;
+        this.activationService = systemActivationService;
+        this.tokenService = tokenService;
     }
 
     @PostMapping("/login")
@@ -167,6 +178,59 @@ public class SuperAdminController {
             @RequestParam String token,
             @RequestBody CoachEntity coach) {
         return superAdminService.updateCertifiedCoach(token, coach);
+    }
+
+    @PostMapping("/recharge")
+    public Result<PaymentRecordEntity> superAdminOfflineRecharge(
+            @RequestParam Long studentId,
+            @RequestParam Double amount) {  // 添加token参数用于权限验证
+        // 可以在这里添加超级管理员权限验证逻辑
+        return paymentService.adminOfflineRecharge(studentId, amount);
+    }
+
+    // 发起服务费支付（500元/年）
+    @GetMapping("/pay_service_fee")
+    public Result<String> payServiceFee(@RequestParam Long superAdminId) {
+        return activationService.payServiceFee(superAdminId);
+    }
+
+    // 激活系统（需支付后调用）
+    @PostMapping("/activate_system")
+    public Result<SystemActivation> activateSystem(
+            @RequestParam Long superAdminId,
+            @RequestParam String deviceId) { // 前端传递的设备唯一标识
+        return activationService.activateSystem(superAdminId, deviceId);
+    }
+
+    @GetMapping("/verify_activation")
+    public Result<Boolean> verifyActivation(@RequestParam String deviceId) {
+        // 调用Service中新增的方法获取当前激活记录
+        Optional<SystemActivation> activeActivation = activationService.getCurrentActiveActivation();
+        if (activeActivation.isEmpty()) {
+            return Result.error(StatusCode.FAIL, "系统未激活");
+        }
+        // 验证设备与当前激活记录的匹配性
+        return activationService.verifyDevice(activeActivation.get().getSecretKey(), deviceId);
+    }
+
+    /**
+     * 新增：获取当前设备的激活过期信息（需超级管理员权限）
+     * @param token 超级管理员登录token（权限验证）
+     * @param deviceId 设备唯一标识（匹配激活记录）
+     * @return 激活状态+到期时间
+     */
+    @GetMapping("/get_activation_expiry")
+    public Result<ActivationExpiryDTO> getActivationExpiry(
+            @RequestParam String token,
+            @RequestParam String deviceId) {
+        // 1. 先验证token有效性（超级管理员权限）
+        Result<InfoAns> infoResult = tokenService.getInfo(token);
+        if (!infoResult.isSuccess()) {
+            return Result.error(StatusCode.FAIL, "令牌无效：" + infoResult.getMessage());
+        }
+
+        // 2. 调用Service获取过期信息
+        return activationService.getActivationExpiry(deviceId);
     }
 
 

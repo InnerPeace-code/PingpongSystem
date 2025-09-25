@@ -251,4 +251,19 @@ public class StudentService {
             return Result.error(StatusCode.FAIL, "获取相关教练失败");
         }
     }
+
+    public Result<StudentEntity> getStudentById(Long studentId) {
+        // 1. 参数校验
+        if (studentId == null) {
+            return Result.error(StatusCode.FAIL, "学生ID不能为空");
+        }
+
+        // 2. 查询学生信息
+        Optional<StudentEntity> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isPresent()) {
+            return Result.success(studentOpt.get()); // 返回学生基础信息（姓名、学号、校区等）
+        } else {
+            return Result.error(StatusCode.USERNAME_NOT_FOUND, "未找到该学生信息");
+        }
+    }
 }

@@ -43,42 +43,46 @@ public class PaymentService {
     }
 
     // 创建支付订单（生成二维码）- 正数表示充值
-    public Result<PaymentRecordEntity> createPayment(Long studentId, Double amount, String method) {
+    public Result<PaymentRecordEntity> createPayment(Long studentId, Double amount, PaymentRecordEntity.PaymentMethod method) {
         if (amount <= 0) {
             return Result.error(StatusCode.FAIL, "金额必须大于0");
         }
-        if (!"WECHAT".equals(method) && !"ALIPAY".equals(method) && !"OFFLINE".equals(method)) {
+
+        // 校验支持的支付方式（枚举直接比较）
+        if (method != PaymentRecordEntity.PaymentMethod.WECHAT &&
+                method != PaymentRecordEntity.PaymentMethod.ALIPAY &&
+                method != PaymentRecordEntity.PaymentMethod.OFFLINE) {
             return Result.error(StatusCode.FAIL, "不支持的支付方式");
         }
 
         PaymentRecordEntity record = new PaymentRecordEntity();
         record.setStudentId(studentId);
         record.setAmount(amount); // 充值金额为正数
-        record.setPaymentMethod(method);
-        record.setStatus("PENDING");
+        record.setPaymentMethod(method); // 直接设置枚举对象
+        record.setStatus(PaymentRecordEntity.PaymentStatus.PENDING); // 使用状态枚举
         record.setCreateTime(LocalDateTime.now());
 
-        // 只有线上支付才生成二维码
-        if ("WECHAT".equals(method) || "ALIPAY".equals(method)) {
+        // 只有线上支付（微信/支付宝）才生成二维码（枚举判断）
+        if (method == PaymentRecordEntity.PaymentMethod.WECHAT || method == PaymentRecordEntity.PaymentMethod.ALIPAY) {
             record.setQrCodeUrl("/qrcode/" + UUID.randomUUID() + ".png");
         }
 
         paymentRecordRepository.save(record);
         return Result.success(record);
     }
-
     // 模拟支付结果回调（扫码后确认支付）
     @Transactional
     public Result<String> confirmPayment(Long recordId) {
         PaymentRecordEntity record = paymentRecordRepository.findById(recordId)
                 .orElseThrow(() -> new RuntimeException("订单不存在"));
 
-        if (!"PENDING".equals(record.getStatus())) {
+        // 状态判断改为枚举比较
+        if (record.getStatus() != PaymentRecordEntity.PaymentStatus.PENDING) {
             return Result.error(StatusCode.FAIL, "订单状态异常");
         }
 
         // 更新订单状态
-        record.setStatus("SUCCESS");
+        record.setStatus(PaymentRecordEntity.PaymentStatus.SUCCESS);
         record.setPayTime(LocalDateTime.now());
         paymentRecordRepository.save(record);
 
@@ -100,11 +104,12 @@ public class PaymentService {
         PaymentRecordEntity record = paymentRecordRepository.findById(recordId)
                 .orElseThrow(() -> new RuntimeException("订单不存在"));
 
-        if (!"PENDING".equals(record.getStatus())) {
+        // 状态判断改为枚举比较
+        if (record.getStatus() != PaymentRecordEntity.PaymentStatus.PENDING) {
             return Result.error(StatusCode.FAIL, "订单状态异常");
         }
 
-        record.setStatus("FAILED");
+        record.setStatus(PaymentRecordEntity.PaymentStatus.FAILED);
         paymentRecordRepository.save(record);
         return Result.success("已取消支付");
     }
@@ -115,7 +120,8 @@ public class PaymentService {
         PaymentRecordEntity originalRecord = paymentRecordRepository.findById(recordId)
                 .orElseThrow(() -> new RuntimeException("支付记录不存在"));
 
-        if (!"SUCCESS".equals(originalRecord.getStatus())) {
+        // 状态判断改为枚举比较
+        if (originalRecord.getStatus() != PaymentRecordEntity.PaymentStatus.SUCCESS) {
             return Result.error(StatusCode.FAIL, "只有已支付的订单可以退款");
         }
 
@@ -124,7 +130,7 @@ public class PaymentService {
         refundRecord.setStudentId(originalRecord.getStudentId());
         refundRecord.setAmount(-originalRecord.getAmount()); // 退款金额为正数,负负得正
         refundRecord.setPaymentMethod(originalRecord.getPaymentMethod());
-        refundRecord.setStatus("REFUNDED");
+        refundRecord.setStatus(PaymentRecordEntity.PaymentStatus.REFUNDED);
         refundRecord.setCreateTime(LocalDateTime.now());
         refundRecord.setPayTime(LocalDateTime.now());
         refundRecord.setRefundTime(LocalDateTime.now());
@@ -149,8 +155,8 @@ public class PaymentService {
         PaymentRecordEntity record = new PaymentRecordEntity();
         record.setStudentId(studentId);
         record.setAmount(-amount); // 消费金额为负数
-        record.setPaymentMethod("ACCOUNT");
-        record.setStatus("SUCCESS");
+        record.setPaymentMethod(PaymentRecordEntity.PaymentMethod.ACCOUNT);
+        record.setStatus(PaymentRecordEntity.PaymentStatus.SUCCESS);
         record.setCreateTime(LocalDateTime.now());
         record.setPayTime(LocalDateTime.now());
 
@@ -190,5 +196,54 @@ public class PaymentService {
 
         Page<PaymentRecordEntity> records = paymentRecordRepository.findAll(spec, pageable);
         return Result.success(records);
+    }
+
+    /**
+     * 管理员线下给学生充值
+     * @param studentId 学生ID
+     * @param amount 充值金额
+     * @return 支付记录
+     */
+    @Transactional
+    public Result<PaymentRecordEntity> adminOfflineRecharge(Long studentId, Double amount) {
+        // 验证金额有效性
+        if (amount <= 0) {
+            return Result.error(StatusCode.FAIL, "充值金额必须大于0");
+        }
+
+        // 创建支付记录
+        PaymentRecordEntity record = new PaymentRecordEntity();
+        record.setStudentId(studentId);
+        record.setAmount(amount);
+        record.setPaymentMethod(PaymentRecordEntity.PaymentMethod.OFFLINE);
+        record.setStatus(PaymentRecordEntity.PaymentStatus.SUCCESS);
+        record.setCreateTime(LocalDateTime.now());
+        record.setPayTime(LocalDateTime.now()); // 线下充值即时到账
+
+        // 保存支付记录
+        PaymentRecordEntity savedRecord = paymentRecordRepository.save(record);
+
+        // 更新学生账户余额
+        StudentAccountEntity account = accountRepository.findByStudentId(studentId)
+                .orElseGet(() -> {
+                    StudentAccountEntity newAccount = new StudentAccountEntity();
+                    newAccount.setStudentId(studentId);
+                    return newAccount;
+                });
+        account.setBalance(account.getBalance() + amount);
+        accountRepository.save(account);
+
+        return Result.success(savedRecord);
+    }
+
+    // 创建月赛报名支付记录
+    public PaymentRecordEntity createMatchPaymentRecord(Long studentId, double amount) {
+        PaymentRecordEntity record = new PaymentRecordEntity();
+        record.setStudentId(studentId);
+        record.setAmount(-amount); // 负数表示支出
+        record.setPaymentMethod(PaymentRecordEntity.PaymentMethod.ACCOUNT);
+        record.setStatus(PaymentRecordEntity.PaymentStatus.SUCCESS);
+        record.setCreateTime(LocalDateTime.now());
+        return paymentRecordRepository.save(record);
     }
 }

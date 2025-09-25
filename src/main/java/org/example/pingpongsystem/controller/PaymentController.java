@@ -4,6 +4,7 @@ package org.example.pingpongsystem.controller;
 import org.example.pingpongsystem.entity.PaymentRecordEntity;
 import org.example.pingpongsystem.service.PaymentService;
 import org.example.pingpongsystem.utility.Result;
+import org.example.pingpongsystem.utility.StatusCode;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,14 @@ public class PaymentController {
             @RequestParam Long studentId,
             @RequestParam Double amount,
             @RequestParam String method) {
-        return paymentService.createPayment(studentId, amount, method);
+        try {
+            // 将字符串转换为枚举（忽略大小写）
+            PaymentRecordEntity.PaymentMethod paymentMethod = PaymentRecordEntity.PaymentMethod.valueOf(method.toUpperCase());
+            return paymentService.createPayment(studentId, amount, paymentMethod);
+        } catch (IllegalArgumentException e) {
+            // 转换失败（无效字符串）
+            return Result.error(StatusCode.FAIL, "无效的支付方式");
+        }
     }
 
     // 确认支付

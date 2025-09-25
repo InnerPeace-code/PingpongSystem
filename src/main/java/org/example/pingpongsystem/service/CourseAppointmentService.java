@@ -287,6 +287,12 @@ public class CourseAppointmentService {
         // 根据校区查询所有球台
         List<TableEntity> tables = tableRepository.findAllBySchoolId(schoolId);
 
+        // 调试：打印当前校区的所有球台ID
+        System.out.println("---------- 调试：当前校区（schoolId=" + schoolId + "）的所有球台ID ----------");
+        for (TableEntity table : tables) {
+            System.out.println("球台ID：" + table.getId());
+        }
+        System.out.println("--------------------------------------------------");
         // 查找指定时间段内未被占用的球台
         for (TableEntity table : tables) {
             List<CourseAppointmentEntity> conflicts = appointmentRepository

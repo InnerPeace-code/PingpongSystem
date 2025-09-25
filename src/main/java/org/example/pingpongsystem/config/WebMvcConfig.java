@@ -1,13 +1,40 @@
 package org.example.pingpongsystem.config;
 
+import org.example.pingpongsystem.interceptor.ActivationInterceptor;
 import org.example.pingpongsystem.utility.Utility;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+    private final ActivationInterceptor activationInterceptor;
+
+    public WebMvcConfig(ActivationInterceptor activationInterceptor) {
+        this.activationInterceptor = activationInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(activationInterceptor)
+                .addPathPatterns("/**") // 拦截所有请求
+                .excludePathPatterns(
+                        "/404", // 排除错误页
+                        // 关键：排除超管激活相关接口，确保未激活时能访问
+                        "/super_admin/login",
+                        "/super_admin/pay_service_fee",
+                        "/super_admin/activate_system",
+                        "/super_admin/verify_activation",
+                        "/token/info",
+                        "/token/logout",
+                        // 排除静态资源接口（避免前端加载图片被拦截）
+                        "/coach-photos/**",
+                        "/user-avatars/**"
+
+                );
+    }
 
     // 配置静态资源映射：将本地图片目录映射为URL路径
     @Override

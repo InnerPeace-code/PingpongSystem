@@ -18,16 +18,33 @@ public class PaymentRecordEntity {
     @Column(nullable = false)
     private Double amount; // 支付金额
 
-    @Column(nullable = false)//前两种方式是学员自行充值，offline是学员找管理员代充，account是学员预约课程扣费
-    private String paymentMethod; // 支付方式：WECHAT/ALIPAY/OFFLINE/ACCOUNT
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod; // 支付方式
 
     private String qrCodeUrl; // 二维码图片地址（线上支付用）
 
-    private String status; // 状态：PENDING/SUCCESS/FAILED/REFUNDED
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus status; // 支付状态
 
     private LocalDateTime createTime; // 创建时间
 
     private LocalDateTime payTime; // 支付时间
 
-    private LocalDateTime refundTime; // 退款时间（新增字段）
+    private LocalDateTime refundTime; // 退款时间
+
+    public enum PaymentMethod {
+        WECHAT,   // 微信支付
+        ALIPAY,   // 支付宝支付
+        OFFLINE,  // 线下充值(管理员代充)
+        ACCOUNT   // 账户余额支付
+    }
+
+    public enum PaymentStatus {
+        PENDING,  // 待支付
+        SUCCESS,  // 支付成功
+        FAILED,   // 支付失败
+        REFUNDED  // 已退款
+    }
 }
+
